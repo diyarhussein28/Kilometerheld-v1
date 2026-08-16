@@ -260,7 +260,7 @@ p { margin: 0 0 1em; }
 /* ==========================================================================
    App
    ========================================================================== */
-.app-shell { display: flex; min-height: 100vh; }
+.app-shell { display: flex; min-height: 100vh; min-height: 100dvh; }
 .app-sidebar {
   width: 224px; background: var(--green-950); color: #cfe0d7;
   display: flex; flex-direction: column; padding: 20px 14px; flex-shrink: 0;
@@ -462,4 +462,41 @@ p { margin: 0 0 1em; }
   .section { padding: 56px 0; }
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   iOS / PWA — safe areas, dynamic viewport, touch ergonomics
+   ========================================================================== */
+
+/* Safari's collapsible URL bar makes 100vh taller than the visible area;
+   use the dynamic viewport unit where supported (falls back to vh). */
+.app-shell { min-height: 100vh; min-height: 100dvh; }
+.modal { max-height: 92vh; max-height: 92dvh; }
+
+/* Notch & home-indicator safe areas (standalone / full-screen PWA). */
+.site-nav { padding-top: env(safe-area-inset-top); }
+.hero { padding-top: calc(76px + env(safe-area-inset-top)); }
+.app-topbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+.app-sidebar { padding-top: calc(20px + env(safe-area-inset-top)); padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+.app-content { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+.modal-backdrop { padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); }
+.modal { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+.toast-wrap { bottom: calc(22px + env(safe-area-inset-bottom)); right: calc(22px + env(safe-area-inset-right)); }
+.final-cta { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.site-footer { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+
+/* Prevent iOS Safari auto-zoom on focus: inputs < 16px trigger the zoom. */
+@media (max-width: 960px), (pointer: coarse) {
+  input, select, textarea { font-size: 16px; }
+}
+
+/* Bigger, thumb-friendly touch targets on touch devices (Apple HIG ≈ 44px). */
+@media (pointer: coarse) {
+  .icon-btn { width: 44px; height: 44px; font-size: 17px; }
+  .month-nav button { width: 44px; height: 44px; }
+  .btn-sm { min-height: 40px; }
+  .app-sidebar nav a { padding: 13px 12px; }
+  .filter-pill { padding: 9px 16px; }
+  .trip-actions { gap: 6px; }
+  .modal-close { width: 44px; height: 44px; }
 }

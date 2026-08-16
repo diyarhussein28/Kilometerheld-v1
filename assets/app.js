@@ -478,6 +478,23 @@
     return new Uint8Array(out);
   }
 
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function isAndroid() { return /Android/i.test(navigator.userAgent); }
+
+  function legacyDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    // iOS < 13 ignores the `download` attribute on blob URLs -> open in a new tab,
+    // where the user can save, print or forward the file themselves.
+    if (isIOS()) { a.target = '_blank'; a.rel = 'noopener'; }
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) { /* jsdom has no revokeObjectURL */ } }, 4000);
+  }
+
   function downloadBlob(content, filename, type) {
     // PDF content is pre-encoded latin-1 (every char < 256). CSV/JSON strings are
     // UTF-16 in JS — encode those as UTF-8 bytes.
@@ -490,12 +507,19 @@
       for (let i = 0; i < content.length; i++) b[i] = content.charCodeAt(i);
       return b;
     })();
-    const a = document.createElement('a');
-    const url = URL.createObjectURL(new Blob([bytes], { type }));
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) { /* jsdom has no revokeObjectURL */ } }, 2000);
+    const blob = new Blob([bytes], { type });
+    const url = URL.createObjectURL(blob);
+
+    // iPhone/Android: open the native share sheet (Save to Files, Mail, WhatsApp,
+    // Print, "send to Steuerberater" …). Desktop keeps the plain download.
+    const file = (typeof File !== 'undefined') ? new File([blob], filename, { type }) : null;
+    if (file && (isIOS() || isAndroid()) && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Kilometerheld', text: filename })
+        .catch(err => { if (!err || err.name !== 'AbortError') legacyDownload(url, filename); });
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) { /* jsdom */ } }, 60000);
+      return;
+    }
+    legacyDownload(url, filename);
   }
 
   function exportCSV(scope) {
