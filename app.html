@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kilometerheld – Fahrtenbuch</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23106043'/><text x='50' y='70' font-size='58' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial'>K</text></svg>">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="app-sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">K</span><span> Kilometerheld</span></a>
+    <nav>
+      <a href="#dashboard" data-view="dashboard" class="active">📊 <span>Übersicht</span></a>
+      <a href="#trips" data-view="trips">🛣️ <span>Fahrten</span></a>
+      <a href="#vehicles" data-view="vehicles">🚗 <span>Fahrzeuge</span></a>
+      <a href="#settings" data-view="settings">⚙️ <span>Einstellungen</span></a>
+    </nav>
+    <div class="side-plan">
+      <span>Tarif: <b id="sidePlanName">Start</b></span>
+      <a href="#settings" data-view="settings" class="badge" id="sidePlanBadge">Start</a>
+    </div>
+    <div class="side-foot">Daten bleiben lokal in deinem Browser.<br>Regelmäßig Backup machen!</div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="app-main">
+
+    <!-- Topbar -->
+    <header class="app-topbar">
+      <div class="month-nav">
+        <button id="prevMonth" title="Vorheriger Monat">‹</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button id="nextMonth" title="Nächster Monat">›</button>
+        <button class="btn btn-ghost btn-sm" id="todayBtn">Heute</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span class="badge" id="topPlanBadge">Start-Tarif</span>
+        <button class="btn btn-primary btn-sm" id="quickAddBtn">+ Fahrt erfassen</button>
+      </div>
+    </header>
+
+    <div class="app-content">
+
+      <!-- ===== VIEW: DASHBOARD ===== -->
+      <section id="view-dashboard">
+        <div class="page-head">
+          <div>
+            <h1>Übersicht</h1>
+            <div class="sub" id="dashboardSub"></div>
+          </div>
+          <div>
+            <button class="btn btn-outline btn-sm" id="dashPdfBtn">📄 Monats-PDF</button>
+            <button class="btn btn-ghost btn-sm" id="dashCsvBtn">⬇ CSV</button>
+          </div>
+        </div>
+
+        <div id="reminderBanner" class="banner" style="display:none">
+          <div class="banner-ico">⏰</div>
+          <div>
+            <strong id="reminderTitle"></strong>
+            <p id="reminderText"></p>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="card kpi"><div class="k">Gesamt-km</div><div class="v" id="kpiTotal">0 <small>km</small></div><div class="hint" id="kpiTotalHint"></div></div>
+          <div class="card kpi"><div class="k">Geschäftlich</div><div class="v" id="kpiBiz">0 <small>km</small></div><div class="hint" id="kpiBizHint"></div></div>
+          <div class="card kpi"><div class="k">Privat</div><div class="v" id="kpiPriv">0 <small>km</small></div><div class="hint" id="kpiPrivHint"></div></div>
+          <div class="card kpi"><div class="k">Geschäftl. Anteil</div><div class="v" id="kpiShare">–</div><div class="hint">Anteil an allen Fahrten</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card panel">
+            <h3>Letzte 14 Tage</h3>
+            <div class="chart" id="chart"></div>
+            <div class="chart-legend">
+              <span><span class="legend-dot" style="background:#17946a"></span>Geschäftlich</span>
+              <span><span class="legend-dot" style="background:#c9d4cf"></span>Privat</span>
+            </div>
+          </div>
+          <div class="card panel">
+            <h3>Dein Steuervorteil</h3>
+            <div class="savings-row">
+              <div class="savings-box">
+                <div class="k">Absetzbarer Kostenanteil (Schätzung)</div>
+                <div class="v" id="savingsYear">–</div>
+                <div class="hint">Geschäftl. Anteil × jährl. Fahrzeugkosten</div>
+              </div>
+              <div class="savings-box">
+                <div class="k">Prognose pro Monat</div>
+                <div class="v" id="savingsMonth">–</div>
+                <div class="hint">Basierend auf diesem Monat</div>
+              </div>
+            </div>
+            <p style="font-size:11.5px;color:var(--muted);margin-top:12px">Unverbindliche Schätzung – ersetzt keine Steuerberatung. Fahrzeugkosten in den Einstellungen anpassbar.</p>
+            <div id="usageBox" style="margin-top:14px">
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)">
+                <span>Fahrten diesen Monat</span><span id="usageLabel"></span>
+              </div>
+              <div class="usage-meter"><div id="usageBar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h3>Letzte Fahrten</h3>
+          <div class="trip-list" id="recentTrips"></div>
+        </div>
+      </section>
+
+      <!-- ===== VIEW: TRIPS ===== -->
+      <section id="view-trips" style="display:none">
+        <div class="page-head">
+          <div>
+            <h1>Fahrten</h1>
+            <div class="sub" id="tripsSub"></div>
+          </div>
+          <div>
+            <button class="btn btn-outline btn-sm" id="tripsPdfBtn">📄 Monats-PDF</button>
+            <button class="btn btn-ghost btn-sm" id="tripsCsvBtn">⬇ CSV</button>
+            <button class="btn btn-primary btn-sm" id="tripsAddBtn">+ Fahrt erfassen</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-pill active" data-filter="all">Alle</button>
+          <button class="filter-pill" data-filter="biz">Geschäftlich</button>
+          <button class="filter-pill" data-filter="priv">Privat</button>
+          <input type="search" class="search-input" id="tripSearch" placeholder="🔍 Suchen (Ziel, Zweck …)">
+        </div>
+        <div class="trip-list" id="tripList"></div>
+      </section>
+
+      <!-- ===== VIEW: VEHICLES ===== -->
+      <section id="view-vehicles" style="display:none">
+        <div class="page-head">
+          <div>
+            <h1>Fahrzeuge</h1>
+            <div class="sub">Deine Fahrzeuge und ihre Kilometerstände</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="vehicleAddBtn">+ Fahrzeug anlegen</button>
+        </div>
+        <div class="vehicle-grid" id="vehicleGrid"></div>
+      </section>
+
+      <!-- ===== VIEW: SETTINGS ===== -->
+      <section id="view-settings" style="display:none">
+        <div class="page-head">
+          <div>
+            <h1>Einstellungen</h1>
+            <div class="sub">Profil, Daten &amp; Tarif</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card panel">
+            <h3>Dein Profil <span style="font-weight:400;font-size:12px;color:var(--muted)">– erscheint im Monats-PDF</span></h3>
+            <div class="form-grid">
+              <div class="field full"><label>Name / Fahrer</label><input id="setName" placeholder="Max Mustermann"></div>
+              <div class="field"><label>Firma (optional)</label><input id="setCompany" placeholder="MM Consulting GmbH"></div>
+              <div class="field"><label>E-Mail (für Support)</label><input id="setEmail" placeholder="max@beispiel.de"></div>
+              <div class="field"><label>Straße &amp; Hausnummer</label><input id="setStreet" placeholder="Musterstraße 12"></div>
+              <div class="field"><label>PLZ &amp; Ort</label><input id="setCity" placeholder="80331 München"></div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-primary btn-sm" id="saveSettings">Speichern</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card panel">
+              <h3>Steuerliche Schätzung</h3>
+              <div class="field">
+                <label>Jährliche Fahrzeugkosten (€)</label>
+                <input type="number" id="setCosts" min="0" step="100" placeholder="7200">
+                <span class="hint">Leasing, Sprit, Versicherung, Wartung – wird für die Ersparnis-Schätzung genutzt.</span>
+              </div>
+              <div class="modal-actions">
+                <button class="btn btn-primary btn-sm" id="saveCosts">Speichern</button>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h3>Dein Tarif</h3>
+              <p style="font-size:14px" id="planStatusText"></p>
+              <div id="planActions" style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" id="upgradeBtn">⬆ Auf Pro upgraden</button>
+                <button class="btn btn-outline btn-sm" id="downgradeBtn" style="display:none">Abo kündigen</button>
+              </div>
+              <p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Pro: 4,99 €/Monat oder 49 €/Jahr · 14 Tage kostenlos · jederzeit kündbar · inkl. MwSt.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel" style="margin-bottom:20px">
+          <h3>Daten &amp; Backup</h3>
+          <p style="font-size:13.5px;color:var(--muted)">Deine Daten liegen ausschließlich lokal in diesem Browser. Sichere sie regelmäßig als Datei – beim Löschen der Browserdaten gehen sie sonst verloren.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" id="exportJsonBtn">⬇ Backup exportieren (.json)</button>
+            <button class="btn btn-outline btn-sm" id="importJsonBtn">⬆ Backup importieren</button>
+            <input type="file" id="importJsonInput" accept=".json" style="display:none">
+            <button class="btn btn-outline btn-sm" id="exportCsvAllBtn">⬇ Alle Fahrten als CSV</button>
+          </div>
+        </div>
+
+        <div class="card panel" style="border-color:#f0d4cf">
+          <h3 style="color:var(--red)">Gefahrenzone</h3>
+          <p style="font-size:13.5px;color:var(--muted)">Löscht alle Fahrzeuge, Fahrten und Einstellungen unwiderruflich aus diesem Browser. Vorher unbedingt ein Backup exportieren!</p>
+          <button class="btn btn-danger btn-sm" id="resetBtn">Alle Daten löschen</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div id="tripModal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <button class="icon-btn modal-close" data-close="tripModal">✕</button>
+    <h2 id="tripModalTitle">Fahrt erfassen</h2>
+    <p class="modal-sub">Dauert nur 10 Sekunden – dein zukünftiges Ich (und dein Steuerberater) dankt dir.</p>
+    <form id="tripForm">
+      <input type="hidden" id="tripId">
+      <div class="form-grid">
+        <div class="field full"><label>Fahrzeug</label><select id="tripVehicle"></select></div>
+        <div class="field"><label>Datum</label><input type="date" id="tripDate" required></div>
+        <div class="field"><label>Art</label>
+          <div class="radio-row">
+            <label class="radio-pill"><input type="radio" name="tripType" value="biz" checked><span class="biz">💼 Geschäftlich</span></label>
+            <label class="radio-pill"><input type="radio" name="tripType" value="priv"><span class="priv">🏠 Privat</span></label>
+          </div>
+        </div>
+        <div class="field"><label>Startort</label><input id="tripFrom" list="placeSuggestions" placeholder="Büro" required></div>
+        <div class="field"><label>Zielort</label><input id="tripTo" list="placeSuggestions" placeholder="Kunde: Müller GmbH" required></div>
+        <datalist id="placeSuggestions"></datalist>
+        <div class="field"><label>Zweck der Fahrt</label><input id="tripPurpose" list="purposeSuggestions" placeholder="Kundenbesuch" required></div>
+        <datalist id="purposeSuggestions">
+          <option value="Kundenbesuch"><option value="Arbeitsweg"><option value="Dienstreise">
+          <option value="Einkauf"><option value="Privatfahrt"><option value="Werkstatt">
+          <option value="Sonstiges">
+        </datalist>
+        <div class="field"><label>Kilometerstand Start</label><input type="number" id="tripKmStart" min="0" placeholder="15200" required></div>
+        <div class="field"><label>Kilometerstand Ende</label><input type="number" id="tripKmEnd" min="0" placeholder="15225" required></div>
+        <div class="field full"><div class="km-preview" id="kmPreview">Gefahrene km: –</div></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="tripModal">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Fahrt speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="vehicleModal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <button class="icon-btn modal-close" data-close="vehicleModal">✕</button>
+    <h2 id="vehicleModalTitle">Fahrzeug anlegen</h2>
+    <p class="modal-sub">Modell, Kennzeichen und aktueller Kilometerstand – mehr brauchst du nicht.</p>
+    <form id="vehicleForm">
+      <input type="hidden" id="vehicleId">
+      <div class="form-grid">
+        <div class="field"><label>Fahrzeug (Modell)</label><input id="vehName" placeholder="Audi A4 Avant" required></div>
+        <div class="field"><label>Kennzeichen</label><input id="vehPlate" placeholder="M-KH 2026"></div>
+        <div class="field"><label>Kilometerstand (aktuell)</label><input type="number" id="vehKm" min="0" placeholder="15200" required></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="vehicleModal">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="upgradeModal" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <button class="icon-btn modal-close" data-close="upgradeModal">✕</button>
+    <h2 id="upgradeTitle">⬆ Auf Pro upgraden</h2>
+    <p class="modal-sub" id="upgradeSub">Unbegrenzte Fahrten &amp; Fahrzeuge, Finanzamt-konforme Monats-PDFs, Backup und mehr.</p>
+    <div class="upgrade-plans">
+      <div class="upgrade-plan selected" data-plan="monthly">
+        <div class="plan-name">Monatsabo</div>
+        <div class="plan-price">4,99&nbsp;€<small> / Monat</small></div>
+        <div class="plan-desc">Flexibel, jederzeit kündbar</div>
+      </div>
+      <div class="upgrade-plan" data-plan="yearly">
+        <div class="plan-name">Jahresabo <span class="upgrade-save">2 MONATE GRATIS</span></div>
+        <div class="plan-price">49&nbsp;€<small> / Jahr</small></div>
+        <div class="plan-desc">4,08 € pro Monat · 17 % sparen</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--muted)">14 Tage kostenlos testen · keine Kreditkarte nötig · inkl. MwSt.</p>
+    <button class="btn btn-primary btn-block" id="confirmUpgrade">Jetzt upgraden →</button>
+    <div class="pay-note">🔒 <b>Demo-Modus:</b> In dieser Vorschau wird die Zahlung simuliert. Im Live-Betrieb führt dieser Button zu einem sicheren Zahlungslink (Stripe oder Paddle als „Merchant of Record" – Paddle übernimmt dabei automatisch die Umsatzsteuer in der EU).</div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal-backdrop" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <h2 id="confirmTitle">Wirklich löschen?</h2>
+    <p class="modal-sub" id="confirmText"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="confirmModal">Abbrechen</button>
+      <button class="btn btn-danger" id="confirmOk">Ja, löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
